@@ -20,7 +20,7 @@ audio_config = BaseAudioConfig(
 )
 data_path="/home/chang/bighard/AI/tts/dataset/kss/4/"
 if colab:
-    data_path="/content/drive/MyDrive/tts/dataset"
+    data_path="/content/drive/MyDrive/tts/dataset/kss/4"
 
 config = HifiganConfig(
     audio=audio_config,
