@@ -2,30 +2,50 @@ import os
 
 from trainer import Trainer, TrainerArgs
 
-from TTS.tts.configs.shared_configs import BaseDatasetConfig
-from TTS.tts.configs.vits_config import VitsConfig
+from TTS.config.shared_configs import BaseAudioConfig, BaseDatasetConfig
+from TTS.tts.configs.shared_configs import CharactersConfig
+from TTS.tts.configs.fast_pitch_config import FastPitchConfig
 from TTS.tts.datasets import load_tts_samples
-from TTS.tts.models.vits import Vits, VitsAudioConfig, CharactersConfig
+from TTS.tts.models.forward_tts import ForwardTTS
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.utils.audio import AudioProcessor
+from TTS.utils.manage import ModelManager
 
 output_path = os.path.dirname(os.path.abspath(__file__))
+
+# init configs
 dataset_config = BaseDatasetConfig(
-    name="kss_ko", meta_file_train="transcript.v.1.4.txt", language="ko-kr", path="/home/chang/bighard/AI/tts/dataset/kss/"
+    name="kss_ko",
+    meta_file_train="transcript.v.1.4.txt",
+    #language="ko-kr",
+    # meta_file_attn_mask=os.path.join(output_path, "../LJSpeech-1.1/metadata_attn_mask.txt"),
+    path="/home/chang/bighard/AI/tts/dataset/kss/",
 )
 
-audio_config = VitsAudioConfig(
-    sample_rate=22050, win_length=1024, hop_length=256, num_mels=80, mel_fmin=0, mel_fmax=None
+audio_config = BaseAudioConfig(
+    sample_rate=22050,
+    resample=True,
+    do_trim_silence=True,
+    trim_db=60.0,
+    signal_norm=False,
+    mel_fmin=0.0,
+    mel_fmax=8000,
+    spec_gain=1.0,
+    log_func="np.log",
+    ref_level_db=20,
+    preemphasis=0.0,
 )
 
-config = VitsConfig(
+config = FastPitchConfig(
+    run_name="fast_pitch_kss_ko",
     audio=audio_config,
-    run_name="vits_kss_ko",
-    batch_size=12,
-    eval_batch_size=12,
-    batch_group_size=5,
-    num_loader_workers=4,
+    batch_size=16,
+    eval_batch_size=16,
+    num_loader_workers=8,
     num_eval_loader_workers=4,
+    compute_input_seq_cache=True,
+    compute_f0=True,
+    f0_cache_path=os.path.join(output_path, "f0_cache"),
     run_eval=True,
     test_delay_epochs=-1,
     epochs=1000,
@@ -33,16 +53,15 @@ config = VitsConfig(
     use_phonemes=True,
     phoneme_language="ko",
     phoneme_cache_path=os.path.join(output_path, "phoneme_cache"),
-    compute_input_seq_cache=True,
-    print_step=25,
+    precompute_num_workers=4,
+    print_step=50,
     print_eval=False,
     mixed_precision=False,
+    max_seq_len=500000,
     output_path=output_path,
     datasets=[dataset_config],
-    cudnn_benchmark=False,
-    min_audio_len=32 * 256 * 4,
-    max_audio_len=220500,
-    #use_language_weighted_sampler=True,
+    #min_audio_len=32 * 256 * 4,
+    #max_audio_len=220500,
     # characters=CharactersConfig(
     #     characters_class="TTS.tts.models.vits.VitsCharacters",
     #     pad="<PAD>",
@@ -54,6 +73,16 @@ config = VitsConfig(
     #     phonemes=None,
     # ),
 )
+config.model_args.use_pitch = False
+config.model_args.use_aligner = True
+# compute alignments
+if not config.model_args.use_aligner:
+    manager = ModelManager()
+    model_path, config_path, _ = manager.download_model("tts_models/en/ljspeech/tacotron2-DCA")
+    # TODO: make compute_attention python callable
+    os.system(
+        f"python TTS/bin/compute_attention_masks.py --model_path {model_path} --config_path {config_path} --dataset ljspeech --dataset_metafile metadata.csv --data_path ./recipes/ljspeech/LJSpeech-1.1/  --use_cuda true"
+    )
 
 # INITIALIZE THE AUDIO PROCESSOR
 # Audio processor is used for feature extraction and audio I/O.
@@ -62,7 +91,7 @@ ap = AudioProcessor.init_from_config(config)
 
 # INITIALIZE THE TOKENIZER
 # Tokenizer is used to convert text to sequences of token IDs.
-# config is updated with the default characters if not defined in the config.
+# If characters are not defined in the config, default characters are passed to the config
 tokenizer, config = TTSTokenizer.init_from_config(config)
 
 # LOAD DATA SAMPLES
@@ -91,23 +120,19 @@ def formatter(root_path, manifest_file, **kwargs):  # pylint: disable=unused-arg
             text = cols[1]
             items.append({"text":text, "audio_file":wav_file, "speaker_name":speaker_name})
             cnt += 1
-            if cnt >= 10000:
-                break
+            #if cnt >= 10000:
+            #if cnt >= 1000:
+            #    break
     return items
 
 # load training samples
 train_samples, eval_samples = load_tts_samples(dataset_config, eval_split=True, formatter=formatter)
 
-# init model
-model = Vits(config, ap, tokenizer, speaker_manager=None)
+# init the model
+model = ForwardTTS(config, ap, tokenizer, speaker_manager=None)
 
 # init the trainer and 🚀
 trainer = Trainer(
-    TrainerArgs(),
-    config,
-    output_path,
-    model=model,
-    train_samples=train_samples,
-    eval_samples=eval_samples,
+    TrainerArgs(), config, output_path, model=model, train_samples=train_samples, eval_samples=eval_samples
 )
 trainer.fit()

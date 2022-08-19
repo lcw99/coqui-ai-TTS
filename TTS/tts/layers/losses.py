@@ -191,7 +191,8 @@ class BCELossMasked(nn.Module):
             mask = sequence_mask(sequence_length=length, max_len=target.size(1))
             num_items = mask.sum()
             loss = functional.binary_cross_entropy_with_logits(
-                x.masked_select(mask), target.masked_select(mask), pos_weight=self.pos_weight, reduction="sum"
+                #x.masked_select(mask), target.masked_select(mask), pos_weight=self.pos_weight, reduction="sum"
+                x.masked_select(mask).cuda(), target.masked_select(mask).cuda(), pos_weight=self.pos_weight.cuda(), reduction="sum"
             )
         else:
             loss = functional.binary_cross_entropy_with_logits(x, target, pos_weight=self.pos_weight, reduction="sum")

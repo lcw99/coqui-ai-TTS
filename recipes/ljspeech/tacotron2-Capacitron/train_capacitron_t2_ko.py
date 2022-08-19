@@ -12,17 +12,20 @@ from TTS.utils.audio import AudioProcessor
 
 output_path = os.path.dirname(os.path.abspath(__file__))
 
-data_path = os.path.join(output_path, "../LJSpeech-1.1/")
+#data_path = "/srv/data/"
 
 # Using LJSpeech like dataset processing for the blizzard dataset
 dataset_config = BaseDatasetConfig(
-    name="ljspeech",
-    meta_file_train="metadata.csv",
-    path=data_path,
+    name="kss_ko",
+    meta_file_train="transcript.v.1.4.txt",
+    language="ko-kr",
+    # meta_file_attn_mask=os.path.join(output_path, "../LJSpeech-1.1/metadata_attn_mask.txt"),
+    path="/home/chang/bighard/AI/tts/dataset/kss/",
 )
 
 audio_config = BaseAudioConfig(
     sample_rate=22050,
+    resample=True,
     do_trim_silence=True,
     trim_db=60.0,
     signal_norm=False,
@@ -48,7 +51,7 @@ config = Tacotron2Config(
     eval_batch_size=16,
     num_loader_workers=8,
     num_eval_loader_workers=8,
-    precompute_num_workers=24,
+    precompute_num_workers=12,
     run_eval=True,
     test_delay_epochs=25,
     ga_alpha=0.0,
@@ -61,9 +64,9 @@ config = Tacotron2Config(
     epochs=1000,
     text_cleaner="phoneme_cleaners",
     use_phonemes=True,
-    phoneme_language="en-us",
+    phoneme_language="ko",
     phonemizer="espeak",
-    phoneme_cache_path=os.path.join(output_path, "phoneme_cache"),
+    phoneme_cache_path=os.path.join(output_path, "phoneme_cache_kr"),
     stopnet_pos_weight=15,
     print_step=25,
     print_eval=True,
@@ -97,7 +100,26 @@ ap = AudioProcessor(**config.audio.to_dict())
 
 tokenizer, config = TTSTokenizer.init_from_config(config)
 
-train_samples, eval_samples = load_tts_samples(dataset_config, eval_split=True)
+def formatter(root_path, manifest_file, **kwargs):  # pylint: disable=unused-argument
+    """Assumes each line as ```<filename>|<transcription>```
+    """
+    txt_file = os.path.join(root_path, manifest_file)
+    items = []
+    speaker_name = "KBSVoice"
+    with open(txt_file, "r", encoding="utf-8") as ttf:
+        cnt = 0
+        for line in ttf:
+            cols = line.split("|")
+            wav_file = os.path.join(root_path, cols[0])
+            text = cols[1]
+            items.append({"text":text, "audio_file":wav_file, "speaker_name":speaker_name})
+            cnt += 1
+            #if cnt >= 10000:
+            #if cnt >= 1000:
+            #    break
+    return items
+
+train_samples, eval_samples = load_tts_samples(dataset_config, eval_split=True, formatter=formatter)
 
 model = Tacotron2(config, ap, tokenizer, speaker_manager=None)
 
