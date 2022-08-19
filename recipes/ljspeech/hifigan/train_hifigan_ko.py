@@ -40,7 +40,7 @@ config = HifiganConfig(
     mixed_precision=False,
     lr_gen=1e-4,
     lr_disc=1e-4,
-    data_path="/home/chang/bighard/AI/tts/dataset/kss/4/",
+    data_path=data_path,
     output_path=output_path,
 )
 
