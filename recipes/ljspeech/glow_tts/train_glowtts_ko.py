@@ -15,17 +15,26 @@ from TTS.tts.models.glow_tts import GlowTTS
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.utils.audio import AudioProcessor
 
+colab = False
+if 'COLAB_GPU' in os.environ:
+    colab = True
+
 # we use the same path as this script as our training folder.
 output_path = os.path.dirname(os.path.abspath(__file__))
 
 # DEFINE DATASET CONFIG
 # Set LJSpeech as our target dataset and define its path.
 # You can also use a simple Dict to define the dataset and pass it to your custom formatter.
+data_path = "/home/chang/bighard/AI/tts/dataset/kss/"
+phoneme_path = os.path.join(output_path, "phoneme_cache_g2p_ko")
+if colab:
+    data_path = "/content/drive/MyDrive/tts/dataset/kss/"
+    phoneme_path = "/content/drive/MyDrive/tts/phoneme_cache_g2p_ko"
 dataset_config = BaseDatasetConfig(
     name="kss_ko",
     meta_file_train="transcript.v.1.4.txt",
     language="ko-kr",
-    path="/home/chang/bighard/AI/tts/dataset/kss/",
+    path=data_path,
 )
 
 audio_config = BaseAudioConfig(
@@ -46,12 +55,19 @@ config = GlowTTSConfig(
     text_cleaner="korean_phoneme_cleaners",
     use_phonemes=True,
     phoneme_language="ko",
-    phoneme_cache_path=os.path.join(output_path, "phoneme_cache_g2p_ko"),
+    phoneme_cache_path=phoneme_path,
     print_step=25,
     print_eval=False,
     mixed_precision=True,
     output_path=output_path,
     datasets=[dataset_config],
+    test_sentences = [
+        "목소리를 만드는데는 오랜 시간이 걸린다, 인내심이 필요하다.",
+        "목소리가 되어라, 메아리가 되지말고.",
+        "철수야 미안하다. 아무래도 그건 못하겠다.",
+        "이 케익은 정말 맛있다. 촉촉하고 달콤하다.",
+        "1963년 11월 23일 이전",
+    ],
 )
 
 # INITIALIZE THE AUDIO PROCESSOR
