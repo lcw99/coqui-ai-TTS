@@ -35,6 +35,7 @@ config = MultibandMelganConfig(
     lr_disc=1e-4,
     data_path="/home/chang/bighard/AI/tts/dataset/kss/wavs/",
     output_path=output_path,
+    steps_to_start_discriminator=10000,
 )
 
 # init audio processor

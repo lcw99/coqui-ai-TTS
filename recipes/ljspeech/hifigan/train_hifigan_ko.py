@@ -18,14 +18,14 @@ audio_config = BaseAudioConfig(
     sample_rate=22050,
     resample=True,
 )
-data_path="/home/chang/bighard/AI/tts/dataset/kss/4/"
+data_path="/home/chang/bighard/AI/tts/dataset/kss/wavs/"
 if colab:
     data_path="/content/drive/MyDrive/tts/dataset/kss/4"
 
 config = HifiganConfig(
     audio=audio_config,
     batch_size=16,
-    eval_batch_size=16,
+    eval_batch_size=8,
     num_loader_workers=4,
     num_eval_loader_workers=4,
     run_eval=True,

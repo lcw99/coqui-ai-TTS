@@ -13,6 +13,7 @@ from .english.time_norm import expand_time_english
 from .french.abbreviations import abbreviations_fr
 
 from .korean.korean import tokenize as ko_tokenize
+from g2pk import G2p
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
@@ -151,4 +152,12 @@ def korean_cleaners(text):
     text = ko_tokenize(
         text
     )  # '존경하는' --> ['ᄌ', 'ᅩ', 'ᆫ', 'ᄀ', 'ᅧ', 'ᆼ', 'ᄒ', 'ᅡ', 'ᄂ', 'ᅳ', 'ᆫ']
+    return text
+
+def korean_phoneme_cleaners(text):
+    """Pipeline for Korean text, including number and abbreviation expansion."""
+    text = multilingual_cleaners(text)
+    g2p = G2p()
+    text = g2p(text)
+    print(text)
     return text

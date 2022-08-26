@@ -8,17 +8,24 @@ from TTS.vocoder.configs import HifiganConfig
 from TTS.vocoder.datasets.preprocess import load_wav_data
 from TTS.vocoder.models.gan import GAN
 
+colab = False
+if 'COLAB_GPU' in os.environ:
+    colab = True
+
 output_path = os.path.dirname(os.path.abspath(__file__))
 
 audio_config = BaseAudioConfig(
     sample_rate=22050,
     resample=True,
 )
+data_path="/home/chang/bighard/AI/tts/dataset/kss/wavs/"
+if colab:
+    data_path="/content/drive/MyDrive/tts/dataset/kss/4"
 
 config = HifiganConfig(
     audio=audio_config,
     batch_size=16,
-    eval_batch_size=16,
+    eval_batch_size=8,
     num_loader_workers=4,
     num_eval_loader_workers=4,
     run_eval=True,
@@ -33,8 +40,9 @@ config = HifiganConfig(
     mixed_precision=False,
     lr_gen=1e-4,
     lr_disc=1e-4,
-    data_path="/home/chang/bighard/AI/tts/dataset/kss/4/",
+    data_path=data_path,
     output_path=output_path,
+    steps_to_start_discriminator=10000,
 )
 
 # init audio processor

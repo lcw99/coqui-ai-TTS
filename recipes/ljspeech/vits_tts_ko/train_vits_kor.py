@@ -1,4 +1,5 @@
 import os
+from re import T
 
 from trainer import Trainer, TrainerArgs
 
@@ -8,6 +9,7 @@ from TTS.tts.datasets import load_tts_samples
 from TTS.tts.models.vits import Vits, VitsAudioConfig, CharactersConfig
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.utils.audio import AudioProcessor
+from dataclasses import dataclass, field
 
 output_path = os.path.dirname(os.path.abspath(__file__))
 dataset_config = BaseDatasetConfig(
@@ -29,19 +31,34 @@ config = VitsConfig(
     run_eval=True,
     test_delay_epochs=-1,
     epochs=1000,
-    text_cleaner="phoneme_cleaners",
+    text_cleaner="korean_phoneme_cleaners",
+    #text_cleaner="chinese_mandarin_cleaners",
     use_phonemes=True,
     phoneme_language="ko",
-    phoneme_cache_path=os.path.join(output_path, "phoneme_cache"),
+    phoneme_cache_path=os.path.join(output_path, "phoneme_cache_g2p_ko"),
     compute_input_seq_cache=True,
     print_step=25,
-    print_eval=False,
-    mixed_precision=False,
+    print_eval=True,
+    mixed_precision=True,
     output_path=output_path,
     datasets=[dataset_config],
     cudnn_benchmark=False,
     min_audio_len=32 * 256 * 4,
     max_audio_len=220500,
+    test_sentences = [
+        ["목소리를 만드는데는 오랜 시간이 걸린다, 인내심이 필요하다."],
+        ["목소리가 되어라, 메아리가 되지말고."],
+        ["철수야 미안하다. 아무래도 그건 못하겠다."],
+        ["이 케익은 정말 맛있다. 촉촉하고 달콤하다."],
+        ["1963년 11월 23일 이전"],
+    ],
+    # test_sentences = [
+    #         ["It took me quite a long time to develop a voice, and now that I have it I'm not going to be silent."],
+    #         ["Be a voice, not an echo."],
+    #         ["I'm sorry Dave. I'm afraid I can't do that."],
+    #         ["This cake is great. It's so delicious and moist."],
+    #         ["Prior to November 22, 1963."],
+    #     ]
     #use_language_weighted_sampler=True,
     # characters=CharactersConfig(
     #     characters_class="TTS.tts.models.vits.VitsCharacters",
@@ -91,8 +108,6 @@ def formatter(root_path, manifest_file, **kwargs):  # pylint: disable=unused-arg
             text = cols[1]
             items.append({"text":text, "audio_file":wav_file, "speaker_name":speaker_name})
             cnt += 1
-            if cnt >= 10000:
-                break
     return items
 
 # load training samples

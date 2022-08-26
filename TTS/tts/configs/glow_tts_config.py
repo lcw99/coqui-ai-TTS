@@ -163,7 +163,7 @@ class GlowTTSConfig(BaseTTSConfig):
     lr_scheduler: str = "NoamLR"
     lr_scheduler_params: dict = field(default_factory=lambda: {"warmup_steps": 4000})
     grad_clip: float = 5.0
-    lr: float = 1e-3
+    lr: float = 1e-6
 
     # overrides
     min_seq_len: int = 3
