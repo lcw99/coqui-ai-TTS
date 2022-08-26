@@ -27,9 +27,11 @@ output_path = os.path.dirname(os.path.abspath(__file__))
 # You can also use a simple Dict to define the dataset and pass it to your custom formatter.
 data_path = "/home/chang/bighard/AI/tts/dataset/kss/"
 phoneme_path = os.path.join(output_path, "phoneme_cache_g2p_ko")
+batch_size = 32
 if colab:
     data_path = "/content/drive/MyDrive/tts/dataset/kss/"
     phoneme_path = "/content/drive/MyDrive/tts/phoneme_cache_g2p_ko"
+    batch_size = 128
 dataset_config = BaseDatasetConfig(
     name="kss_ko",
     meta_file_train="transcript.v.1.4.txt",
@@ -45,7 +47,7 @@ audio_config = BaseAudioConfig(
 # Configure the model. Every config class inherits the BaseTTSConfig.
 config = GlowTTSConfig(
     audio=audio_config,
-    batch_size=32,
+    batch_size=batch_size,
     eval_batch_size=16,
     num_loader_workers=8,
     num_eval_loader_workers=8,
