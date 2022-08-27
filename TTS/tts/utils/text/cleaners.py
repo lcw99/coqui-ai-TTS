@@ -161,3 +161,12 @@ def korean_phoneme_cleaners(text):
     text = g2p(text)
     print(text)
     return text
+
+def korean_phoneme_cleaners_with_tokeniner(text):
+    """Pipeline for Korean text, including number and abbreviation expansion."""
+    text = multilingual_cleaners(text)
+    g2p = G2p()
+    text = g2p(text)
+    text = ko_tokenize(text)
+    #print(text)
+    return text
