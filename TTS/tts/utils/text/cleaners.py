@@ -18,6 +18,7 @@ from g2pk import G2p
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
 
+g2p = G2p()
 
 def expand_abbreviations(text, lang="en"):
     if lang == "en":
@@ -154,18 +155,16 @@ def korean_cleaners(text):
     )  # '존경하는' --> ['ᄌ', 'ᅩ', 'ᆫ', 'ᄀ', 'ᅧ', 'ᆼ', 'ᄒ', 'ᅡ', 'ᄂ', 'ᅳ', 'ᆫ']
     return text
 
-def korean_phoneme_cleaners(text):
+def korean_phoneme_cleaners_g2p(text):
     """Pipeline for Korean text, including number and abbreviation expansion."""
     text = multilingual_cleaners(text)
-    g2p = G2p()
     text = g2p(text)
-    print(text)
+    #print(text)
     return text
 
 def korean_phoneme_cleaners_with_tokeniner(text):
     """Pipeline for Korean text, including number and abbreviation expansion."""
     text = multilingual_cleaners(text)
-    g2p = G2p()
     text = g2p(text)
     text = ko_tokenize(text)
     #print(text)
