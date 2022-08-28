@@ -110,7 +110,11 @@ def formatter(root_path, manifest_file, **kwargs):  # pylint: disable=unused-arg
     return items
 
 # load training samples
-train_samples, eval_samples = load_tts_samples(dataset_config, eval_split=True, formatter=formatter)
+train_samples, eval_samples = load_tts_samples(dataset_config, 
+    eval_split=True, 
+    eval_split_max_size=config.eval_split_max_size,
+    eval_split_size=config.eval_split_size,
+    formatter=formatter)
 
 # init model
 model = Vits(config, ap, tokenizer, speaker_manager=None)
