@@ -59,6 +59,7 @@ config = GlowTTSConfig(
     use_phonemes=False,
     phoneme_language="ko",
     phoneme_cache_path=phoneme_path,
+    eval_split_size=10,
     print_step=25,
     print_eval=False,
     mixed_precision=True,
