@@ -45,7 +45,7 @@ config = FastPitchConfig(
     num_eval_loader_workers=4,
     compute_input_seq_cache=True,
     compute_f0=True,
-    f0_cache_path=os.path.join(output_path, "f0_cache"),
+    f0_cache_path=os.path.join(output_path, "f0_cache_g2p"),
     run_eval=True,
     test_delay_epochs=-1,
     epochs=1000,
@@ -62,7 +62,7 @@ config = FastPitchConfig(
     max_seq_len=500000,
     output_path=output_path,
     datasets=[dataset_config],
-    min_audio_len=32 * 256 * 4,
+    min_audio_len=1,
     max_audio_len=220500,
     test_sentences = [
         "목소리를 만드는데는 오랜 시간이 걸린다, 인내심이 필요하다.",
@@ -138,7 +138,7 @@ def formatter(root_path, manifest_file, **kwargs):  # pylint: disable=unused-arg
 
 # load training samples
 train_samples, eval_samples = load_tts_samples(dataset_config, 
-eval_split=True, 
+    eval_split=True, 
     eval_split_max_size=config.eval_split_max_size,
     eval_split_size=config.eval_split_size,
     formatter=formatter)

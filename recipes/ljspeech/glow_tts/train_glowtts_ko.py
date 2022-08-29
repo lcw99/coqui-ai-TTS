@@ -32,6 +32,7 @@ if colab:
     data_path = "/content/drive/MyDrive/tts/dataset/kss/"
     phoneme_path = "/content/drive/MyDrive/tts/phoneme_cache_g2p_ko"
     batch_size = 32
+    
 dataset_config = BaseDatasetConfig(
     name="kss_ko",
     meta_file_train="transcript.v.1.4.txt",
