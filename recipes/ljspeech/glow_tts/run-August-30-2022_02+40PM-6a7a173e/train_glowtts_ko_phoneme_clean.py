@@ -1,84 +1,58 @@
 import os
 
+# Trainer: Where the ✨️ happens.
+# TrainingArgs: Defines the set of arguments of the Trainer.
 from trainer import Trainer, TrainerArgs
 
-from TTS.config import BaseAudioConfig, BaseDatasetConfig
-from TTS.tts.configs.fast_speech_config import FastSpeechConfig
+# GlowTTSConfig: all model related values for training, validating and testing.
+from TTS.config.shared_configs import BaseAudioConfig
+from TTS.tts.configs.glow_tts_config import GlowTTSConfig
+
+# BaseDatasetConfig: defines name, formatter and path of the dataset.
+from TTS.tts.configs.shared_configs import BaseDatasetConfig
 from TTS.tts.datasets import load_tts_samples
-from TTS.tts.models.forward_tts import ForwardTTS
+from TTS.tts.models.glow_tts import GlowTTS
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.utils.audio import AudioProcessor
-from TTS.utils.manage import ModelManager
 
+# we use the same path as this script as our training folder.
 output_path = os.path.dirname(os.path.abspath(__file__))
 
+# DEFINE DATASET CONFIG
+# Set LJSpeech as our target dataset and define its path.
+# You can also use a simple Dict to define the dataset and pass it to your custom formatter.
 dataset_config = BaseDatasetConfig(
     name="kss_ko",
     meta_file_train="transcript.v.1.4.txt",
-    #language="ko-kr",
-    # meta_file_attn_mask=os.path.join(output_path, "../LJSpeech-1.1/metadata_attn_mask.txt"),
+    language="ko-kr",
     path="/home/chang/bighard/AI/tts/dataset/kss/",
 )
 
 audio_config = BaseAudioConfig(
     sample_rate=22050,
     resample=True,
-    do_trim_silence=True,
-    trim_db=60.0,
-    signal_norm=False,
-    mel_fmin=0.0,
-    mel_fmax=8000,
-    spec_gain=1.0,
-    log_func="np.log",
-    ref_level_db=20,
-    preemphasis=0.0,
 )
-
-config = FastSpeechConfig(
-    run_name="fast_speech_kss_ko_phoneme_g2p",
+# INITIALIZE THE TRAINING CONFIGURATION
+# Configure the model. Every config class inherits the BaseTTSConfig.
+config = GlowTTSConfig(
     audio=audio_config,
     batch_size=32,
     eval_batch_size=16,
     num_loader_workers=4,
     num_eval_loader_workers=4,
-    compute_input_seq_cache=True,
-    compute_f0=False,
     run_eval=True,
     test_delay_epochs=-1,
     epochs=1000,
-    text_cleaner="korean_phoneme_cleaners_g2p",
+    text_cleaner="phoneme_cleaners",
     use_phonemes=True,
     phoneme_language="ko",
     phoneme_cache_path=os.path.join(output_path, "phoneme_cache_ko"),
-    precompute_num_workers=4,
-    print_step=50,
-    save_step=5000,
+    print_step=25,
     print_eval=False,
     mixed_precision=True,
-    max_seq_len=500000,
     output_path=output_path,
     datasets=[dataset_config],
-    min_audio_len=1,
-    max_audio_len=2205000,
-    test_sentences = [
-        "목소리를 만드는데는 오랜 시간이 걸린다, 인내심이 필요하다.",
-        "목소리가 되어라, 메아리가 되지말고.",
-        "철수야 미안하다. 아무래도 그건 못하겠다.",
-        "이 케익은 정말 맛있다. 촉촉하고 달콤하다.",
-        "1963년 11월 23일 이전",
-    ],
 )
-
-config.model_args.use_pitch = False
-config.model_args.use_aligner = True
-# compute alignments
-if not config.model_args.use_aligner:
-    manager = ModelManager()
-    model_path, config_path, _ = manager.download_model("tts_models/en/ljspeech/tacotron2-DCA")
-    # TODO: make compute_attention python callable
-    os.system(
-        f"python TTS/bin/compute_attention_masks.py --model_path {model_path} --config_path {config_path} --dataset ljspeech --dataset_metafile metadata.csv --data_path ./recipes/ljspeech/LJSpeech-1.1/  --use_cuda true"
-    )
 
 # INITIALIZE THE AUDIO PROCESSOR
 # Audio processor is used for feature extraction and audio I/O.
@@ -114,28 +88,32 @@ def formatter(root_path, manifest_file, **kwargs):  # pylint: disable=unused-arg
             cols = line.split("|")
             wav_file = os.path.join(root_path, cols[0])
             text = cols[1]
-            if len(text) <= 5:
-                continue
             items.append({"text":text, "audio_file":wav_file, "speaker_name":speaker_name})
-            #cnt += 1
+            cnt += 1
             #if cnt >= 10000:
             #if cnt >= 1000:
             #    break
     return items
 
-# load training samples
-train_samples, eval_samples = load_tts_samples(dataset_config, 
+train_samples, eval_samples = load_tts_samples(
+    dataset_config, 
     eval_split=True, 
     eval_split_max_size=config.eval_split_max_size,
     eval_split_size=config.eval_split_size,
-    formatter=formatter
-)
+    formatter=formatter)
 
-# init the model
-model = ForwardTTS(config, ap, tokenizer)
+# INITIALIZE THE MODEL
+# Models take a config object and a speaker manager as input
+# Config defines the details of the model like the number of layers, the size of the embedding, etc.
+# Speaker manager is used by multi-speaker models.
+model = GlowTTS(config, ap, tokenizer, speaker_manager=None)
 
-# init the trainer and 🚀
+# INITIALIZE THE TRAINER
+# Trainer provides a generic API to train all the 🐸TTS models with all its perks like mixed-precision training,
+# distributed training, etc.
 trainer = Trainer(
     TrainerArgs(), config, output_path, model=model, train_samples=train_samples, eval_samples=eval_samples
 )
+
+# AND... 3,2,1... 🚀
 trainer.fit()

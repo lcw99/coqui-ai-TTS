@@ -13,7 +13,10 @@ from .english.time_norm import expand_time_english
 from .french.abbreviations import abbreviations_fr
 
 from .korean.korean import tokenize as ko_tokenize
+from .korean.korean import normalize as ko_normalize
 from g2pk import G2p
+
+from hangul_utils import split_syllables, join_jamos
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
@@ -148,24 +151,30 @@ def multilingual_cleaners(text):
     text = collapse_whitespace(text)
     return text
 
-def korean_cleaners(text):
+def korean_phoneme_cleaners_normalize(text):
     """Pipeline for Korean text, including number and abbreviation expansion."""
-    text = ko_tokenize(
-        text
-    )  # '존경하는' --> ['ᄌ', 'ᅩ', 'ᆫ', 'ᄀ', 'ᅧ', 'ᆼ', 'ᄒ', 'ᅡ', 'ᄂ', 'ᅳ', 'ᆫ']
+    text = multilingual_cleaners(text)
+    text = ko_normalize(text)
+    return text
+
+def korean_cleaners_jamo_split(text):
+    """Pipeline for Korean text, including number and abbreviation expansion."""
+    text = multilingual_cleaners(text)
+    text = split_syllables(text)
     return text
 
 def korean_phoneme_cleaners_g2p(text):
     """Pipeline for Korean text, including number and abbreviation expansion."""
+    #print("!", text)
     text = multilingual_cleaners(text)
+    text = ko_normalize(text)
     text = g2p(text)
-    #print(text)
+    #print(">", text)
     return text
 
-def korean_phoneme_cleaners_with_tokeniner(text):
+def korean_phoneme_cleaners_with_g2p_jamo_split(text):
     """Pipeline for Korean text, including number and abbreviation expansion."""
     text = multilingual_cleaners(text)
     text = g2p(text)
-    text = ko_tokenize(text)
-    #print(text)
+    text = split_syllables(text)
     return text
