@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 
 output_path = os.path.dirname(os.path.abspath(__file__))
 dataset_config = BaseDatasetConfig(
-    name="kss_ko", meta_file_train="transcript.v.1.4.txt", language="ko-kr", path="/home/chang/bighard/AI/tts/dataset/kss/"
+    dataset_name="kss_ko", meta_file_train="transcript.v.1.4.txt", language="ko-kr", path="/home/chang/nas1/linux/dataset/tts/kss22050"
 )
 
 audio_config = VitsAudioConfig(
@@ -23,19 +23,21 @@ audio_config = VitsAudioConfig(
 config = VitsConfig(
     audio=audio_config,
     run_name="vits_kss_ko",
-    batch_size=12,
-    eval_batch_size=12,
+    batch_size=64,
+    eval_batch_size=16,
     batch_group_size=5,
-    num_loader_workers=4,
+    num_loader_workers=8,
     num_eval_loader_workers=4,
     run_eval=True,
     test_delay_epochs=-1,
     epochs=1000,
-    text_cleaner="korean_phoneme_cleaners",
-    #text_cleaner="chinese_mandarin_cleaners",
+    text_cleaner="korean_phoneme_cleaners_normalize",
+    #text_cleaner="korean_phoneme_cleaners_with_g2p_jamo_split",
     use_phonemes=True,
+    phonemizer="espeak",
     phoneme_language="ko",
-    phoneme_cache_path=os.path.join(output_path, "phoneme_cache_g2p_ko"),
+    #phoneme_cache_path=os.path.join(output_path, "phoneme_cache_g2p_jamo"),
+    phoneme_cache_path=os.path.join(output_path, "phoneme_cache_normalize_espeak"),
     compute_input_seq_cache=True,
     print_step=25,
     print_eval=True,
@@ -43,8 +45,8 @@ config = VitsConfig(
     output_path=output_path,
     datasets=[dataset_config],
     cudnn_benchmark=False,
-    min_audio_len=32 * 256 * 4,
-    max_audio_len=220500,
+    #min_audio_len=32 * 256 * 4,
+    #max_audio_len=220500,
     test_sentences = [
         ["목소리를 만드는데는 오랜 시간이 걸린다, 인내심이 필요하다."],
         ["목소리가 되어라, 메아리가 되지말고."],
@@ -66,7 +68,7 @@ config = VitsConfig(
     #     eos="<EOS>",
     #     bos="<BOS>",
     #     blank="<BLNK>",
-    #     characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzᄀᄁᄂᄃᄄᄅᄆᄇᄈᄉᄊᄋᄌᄍᄎᄏᄐᄑ"+"ᄒ"+"ᅡᅢᅣᅤᅥᅦᅧᅨᅩᅪᅫᅬᅭᅮᅯᅰᅱᅲᅳᅴᅵᆨᆩᆪᆫᆬᆭᆮᆯᆰᆱᆲᆳᆴᆵᆶᆷᆸᆹᆺᆻᆼᆽᆾᆿᇀᇁᇂ",
+    #     characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzᄀᄁᄂᄃᄄᄅᄆᄇᄈᄉᄊᄋᄌᄍᄎᄏᄐᄑ"+"ᄒ"+"ᅡᅢᅣᅤᅥᅦᅧᅨᅩᅪᅫᅬᅭᅮᅯᅰᅱᅲᅳᅴᅵᆨᆩᆪᆫᆬᆭᆮᆯᆰᆱᆲᆳᆴᆵᆶᆷᆸᆹᆺᆻᆼᆽᆾᆿᇀᇁᇂ"+"ㅇㅏㅠㄴㅗㄹㄷㅉㅁㅔㅣㅚㅡㄱㅈㄲㅜㅛㅌㅅㅓㅊㅎㅐㄸㅆㅍㅃㅑㅂㅕㅝㅟㅘㅋㅢㅖㅙㅞㅒ/",
     #     punctuations="!¡'(),-.:;¿? ",
     #     phonemes=None,
     # ),
@@ -106,7 +108,9 @@ def formatter(root_path, manifest_file, **kwargs):  # pylint: disable=unused-arg
             cols = line.split("|")
             wav_file = os.path.join(root_path, cols[0])
             text = cols[1]
-            items.append({"text":text, "audio_file":wav_file, "speaker_name":speaker_name})
+            if len(text) < 5:
+                continue
+            items.append({"text":text, "root_path":root_path, "audio_file":wav_file, "speaker_name":speaker_name})
             cnt += 1
     return items
 
